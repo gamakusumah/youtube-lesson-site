@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--
+  REFERENCE DESIGN for the youtube-lesson-site skill. Keep <style> and the scroll-spy script as they are.
+  Reusable blocks: .hero (code-style h1, chips), nav.toc, section > .sec-no + h2.sec, .analogi, .note(.alert),
+  figure > .fig-frame > svg, .tbl-wrap table, .eq, .split, pre code (.tk-*), .lab (makeLab), ol.tasks, footer.
+  Replace all text, figures, tables and labs with content from the video. Delete the lab CSS/JS if unused.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendars — How We Measure Time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#08090A;
+    --paper:#F7F8F8;
+    --accent:#0257BA;
+    --accent-lift:#5B9BE8;
+
+    --surface:#101317;
+    --surface-2:#161A1F;
+    --rule:rgba(247,248,248,.11);
+    --rule-soft:rgba(247,248,248,.06);
+    --muted:#8D959E;
+
+    --kw:#5B9BE8;
+    --str:#79D3A5;
+    --num:#EDA45C;
+    --com:#5F6975;
+    --plain:#C9D1D9;
+    --warn:#E8807F;
+
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"Instrument Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    --disp:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+
+  body{
+    margin:0;background:var(--ink);color:var(--paper);
+    font-family:var(--sans);font-size:16.5px;line-height:1.68;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-lift)}
+  ::selection{background:var(--accent);color:var(--paper)}
+  :focus-visible{outline:2px solid var(--accent-lift);outline-offset:3px;border-radius:2px}
+
+  .hero{
+    border-bottom:1px solid var(--rule);
+    padding:clamp(56px,10vw,110px) clamp(20px,5vw,64px) clamp(44px,7vw,72px);
+    position:relative;overflow:hidden;
+  }
+  .hero::after{
+    content:"";position:absolute;left:clamp(20px,5vw,64px);bottom:0;
+    width:min(560px,60%);height:3px;background:var(--accent);
+  }
+  .hero-inner{max-width:1160px;margin:0 auto}
+  .kicker{font-family:var(--mono);font-size:.74rem;letter-spacing:.14em;color:var(--muted);margin:0 0 clamp(24px,4vw,40px)}
+  .kicker b{color:var(--accent-lift);font-weight:500}
+  .hero-code{
+    font-family:var(--mono);font-weight:700;
+    font-size:clamp(1.3rem,4.3vw,2.9rem);line-height:1.24;
+    letter-spacing:-.025em;margin:0;color:var(--plain);word-break:break-word;
+  }
+  .hero-code .k{color:var(--kw)}
+  .hero-code .s{color:var(--str)}
+  .hero-code .b{color:#F7F8F8;background:var(--accent);padding:0 .18em;border-radius:4px}
+  .hero-code .p{color:var(--muted)}
+  .hero-sub{margin:clamp(24px,4vw,34px) 0 0;max-width:56ch;color:#B9C0C7;font-size:1.02rem}
+  .hero-meta{margin-top:clamp(28px,4vw,40px);display:flex;flex-wrap:wrap;gap:10px}
+  .chip{font-family:var(--mono);font-size:.74rem;padding:6px 11px;border:1px solid var(--rule);border-radius:999px;color:var(--muted)}
+  .chip.solid{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+
+  .shell{
+    max-width:1160px;margin:0 auto;padding:0 clamp(20px,5vw,64px) 120px;
+    display:grid;grid-template-columns:210px minmax(0,1fr);
+    gap:clamp(32px,5vw,72px);align-items:start;
+  }
+  nav.toc{position:sticky;top:28px;padding-top:clamp(40px,6vw,64px)}
+  .toc h2{font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.13em;color:var(--muted);margin:0 0 16px}
+  .toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--rule)}
+  .toc a{
+    display:flex;gap:10px;padding:6px 0 6px 14px;margin-left:-1px;
+    border-left:1px solid transparent;font-size:.86rem;line-height:1.4;
+    color:var(--muted);text-decoration:none;transition:color .15s,border-color .15s;
+  }
+  .toc a span{font-family:var(--mono);font-size:.72rem;opacity:.65;padding-top:2px}
+  .toc a:hover{color:var(--paper)}
+  .toc a.active{color:var(--paper);border-left-color:var(--accent-lift)}
+  .toc a.active span{color:var(--accent-lift);opacity:1}
+
+  main{min-width:0;padding-top:clamp(40px,6vw,64px)}
+  section{padding-block:clamp(40px,6vw,64px);border-top:1px solid var(--rule-soft)}
+  section:first-of-type{border-top:0;padding-top:0}
+
+  .sec-no{font-family:var(--mono);font-size:.78rem;color:var(--accent-lift);display:block;margin-bottom:10px}
+  h2.sec{
+    font-family:var(--disp);font-weight:700;font-size:clamp(1.55rem,3.6vw,2.15rem);
+    line-height:1.14;letter-spacing:-.022em;margin:0 0 18px;
+  }
+  h3{font-family:var(--disp);font-weight:600;font-size:1.12rem;letter-spacing:-.01em;margin:36px 0 12px}
+  p{margin:0 0 16px;max-width:70ch;color:#DDE1E5}
+  p strong{color:var(--paper);font-weight:600}
+  code.inl{
+    font-family:var(--mono);font-size:.86em;background:var(--surface-2);
+    border:1px solid var(--rule-soft);padding:1px 6px;border-radius:4px;
+    color:#B5CFEE;white-space:nowrap;
+  }
+  ul.plain{margin:0 0 18px;padding-left:20px;max-width:70ch;color:#DDE1E5}
+  ul.plain li{margin-bottom:7px}
+  ul.plain li::marker{color:var(--accent-lift)}
+
+  pre{
+    margin:18px 0 22px;background:var(--surface);border:1px solid var(--rule);
+    border-radius:10px;padding:18px 20px;overflow-x:auto;font-size:.845rem;line-height:1.75;
+  }
+  pre code{font-family:var(--mono);color:var(--plain);white-space:pre}
+  .tk-c{color:var(--com);font-style:italic}
+  .tk-s{color:var(--str)}
+  .tk-n{color:var(--num)}
+  .tk-k{color:var(--kw)}
+
+  .analogi{
+    margin:24px 0;padding:18px 20px 18px 22px;border-left:3px solid var(--accent);
+    background:linear-gradient(90deg,rgba(2,87,186,.13),rgba(2,87,186,0));border-radius:0 8px 8px 0;
+  }
+  .analogi .tag{font-family:var(--mono);font-size:.74rem;color:var(--accent-lift);display:block;margin-bottom:6px}
+  .analogi p{margin:0;color:#E4E8EB}
+  .analogi p + p{margin-top:10px}
+
+  .note{margin:22px 0;padding:16px 18px;border:1px solid var(--rule);border-radius:8px;background:var(--surface-2)}
+  .note .tag{font-family:var(--mono);font-size:.74rem;color:var(--num);display:block;margin-bottom:6px}
+  .note.alert{border-color:rgba(232,128,127,.4)}
+  .note.alert .tag{color:var(--warn)}
+  .note p{margin:0;font-size:.95rem}
+  .note p + p{margin-top:9px}
+
+  figure{margin:28px 0;padding:0}
+  .fig-frame{border:1px solid var(--rule);border-radius:12px;background:var(--surface);padding:22px 18px;overflow-x:auto}
+  .fig-frame svg{display:block;width:100%;height:auto;min-width:520px}
+  figcaption{font-family:var(--mono);font-size:.74rem;color:var(--muted);margin-top:12px;line-height:1.6}
+
+  .tbl-wrap{overflow-x:auto;margin:22px 0}
+  table{border-collapse:collapse;width:100%;min-width:520px;font-size:.9rem}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+  thead th{
+    font-family:var(--mono);font-weight:500;font-size:.75rem;letter-spacing:.06em;
+    color:var(--muted);border-bottom:1px solid var(--rule);
+  }
+  tbody td:first-child{font-family:var(--mono);color:var(--accent-lift);white-space:nowrap}
+  .yes{color:var(--str)}
+  .no{color:var(--warn)}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+  .split pre{margin:0;height:100%}
+  @media (max-width:720px){.split{grid-template-columns:1fr}}
+
+  .eq{
+    margin:22px 0;padding:20px 22px;background:var(--surface);border:1px solid var(--rule);
+    border-radius:10px;font-family:var(--mono);font-size:clamp(.9rem,2.2vw,1.15rem);line-height:2;color:var(--plain);overflow-x:auto;white-space:nowrap;
+  }
+  .eq .hl{color:var(--num)} .eq .ok{color:var(--str)} .eq .bad{color:var(--warn)} .eq .m{color:var(--muted)}
+
+  .lab{margin:26px 0;border:1px solid var(--rule);border-radius:12px;background:var(--surface);overflow:hidden}
+  .lab-head{padding:14px 18px;border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+  .lab-body{padding:18px}
+  .lab-btns{display:flex;flex-wrap:wrap;gap:8px}
+  .lab-btns button{
+    font-family:var(--mono);font-size:.8rem;padding:7px 12px;background:var(--surface-2);
+    color:var(--plain);border:1px solid var(--rule);border-radius:6px;cursor:pointer;
+    transition:background .14s,border-color .14s,color .14s;
+  }
+  .lab-btns button:hover{border-color:var(--accent-lift);color:var(--paper)}
+  .lab-btns button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+  .lab-code{
+    margin-top:18px;padding:14px 16px;background:var(--ink);border:1px solid var(--rule);
+    border-radius:8px 8px 0 0;border-bottom:0;font-family:var(--mono);font-size:.82rem;
+    line-height:1.7;color:var(--plain);white-space:pre;overflow-x:auto;
+  }
+  .lab-trace{overflow-x:auto;border:1px solid var(--rule);border-radius:0 0 8px 8px;background:var(--ink)}
+  .lab-trace table{min-width:520px;font-size:.82rem;margin:0}
+  .lab-trace th,.lab-trace td{padding:8px 14px}
+  .lab-trace tbody td{font-family:var(--mono);color:#C9D1D9}
+  .lab-trace tbody td:first-child{color:var(--muted);width:52px}
+  .lab-trace tbody td.state{color:var(--accent-lift)}
+  .lab-trace tbody tr.mark td{color:var(--str)}
+
+  ol.tasks{counter-reset:t;list-style:none;margin:22px 0;padding:0;max-width:70ch}
+  ol.tasks li{
+    counter-increment:t;position:relative;padding:14px 0 14px 46px;
+    border-bottom:1px solid var(--rule-soft);color:#DDE1E5;
+  }
+  ol.tasks li::before{
+    content:counter(t,decimal-leading-zero);position:absolute;left:0;top:14px;
+    font-family:var(--mono);font-size:.78rem;color:var(--accent-lift);
+  }
+
+  footer{border-top:1px solid var(--rule);padding:34px clamp(20px,5vw,64px);font-family:var(--mono);font-size:.74rem;color:var(--muted)}
+  footer div{max-width:1160px;margin:0 auto}
+
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr;gap:0}
+    nav.toc{position:static;padding-top:36px;padding-bottom:8px}
+    .toc ol{display:flex;flex-wrap:wrap;gap:6px;border-left:0}
+    .toc a{border:1px solid var(--rule);border-radius:6px;padding:6px 10px}
+    .toc a.active{border-color:var(--accent-lift)}
+    main{padding-top:28px}
+  }
+  @media print{
+    body{background:#fff;color:#111}
+    nav.toc,.lab{display:none}
+    pre,.fig-frame{background:#f4f6f8;border-color:#ccc}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="kicker">Lecture notes &nbsp;/&nbsp; <b>Date 1 · Calendar</b></p>
+    <h1 class="hero-code"><span class="k">const</span> lecture <span class="p">=</span> <span class="b">{</span> topic<span class="p">:</span> <span class="s">"Calendar"</span> <span class="b">}</span><span class="p">;</span></h1>
+    <p class="hero-sub">Humans started with only day and night. How did we get to weeks, months, years, and leap days? A walk through the sky, the Moon, the Sun, and two very careful corrections.</p>
+    <div class="hero-meta">
+      <span class="chip solid">10 sections</span>
+      <span class="chip">analogies</span>
+      <span class="chip">illustrations</span>
+      <span class="chip">2 labs</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <nav class="toc" aria-label="Table of contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#s1"><span>01</span>Day and night</a></li>
+      <li><a href="#s2"><span>02</span>The seven-day week</a></li>
+      <li><a href="#s3"><span>03</span>The lunar system</a></li>
+      <li><a href="#s4"><span>04</span>The solar system</a></li>
+      <li><a href="#s5"><span>05</span>Moon or Sun?</a></li>
+      <li><a href="#s6"><span>06</span>Lunisolar calendars</a></li>
+      <li><a href="#s7"><span>07</span>Julian calendar</a></li>
+      <li><a href="#s8"><span>08</span>Gregorian calendar</a></li>
+      <li><a href="#s9"><span>09</span>Calendar vs. era</a></li>
+      <li><a href="#s10"><span>10</span>Summary &amp; practice</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <!-- ============ 01 ============ -->
+  <section id="s1">
+    <span class="sec-no">01</span>
+    <h2 class="sec">Day and night are not enough</h2>
+    <p>At first, people understood only two repeating things: <strong>day and night</strong>. That was enough to decide when to work, when to rest, and when to sleep.</p>
+    <p>But life needed longer plans. When to <strong>hunt</strong>, when to <strong>gather</strong> in large groups, when it is safe to <strong>travel</strong>. None of that fits inside a single day. People needed a longer time system, and the only thing they could use as a reference was the <strong>sky</strong>.</p>
+
+    <figure>
+      <div class="fig-frame">
+        <svg viewBox="0 0 700 190" role="img" aria-label="A short day-night cycle compared with the longer cycles people needed">
+          <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#0257BA"/></marker></defs>
+          <g font-family="JetBrains Mono, monospace">
+            <text x="30" y="34" font-size="11" fill="#8D959E">what they had</text>
+            <rect x="30" y="44" width="190" height="34" rx="8" fill="#161A1F" stroke="rgba(247,248,248,.2)"/>
+            <text x="125" y="66" font-size="13" fill="#C9D1D9" text-anchor="middle">day · night · day …</text>
+
+            <path d="M232 61 L300 61" stroke="#0257BA" stroke-width="1.6" marker-end="url(#a1)"/>
+            <text x="238" y="52" font-size="11" fill="#5B9BE8">not enough</text>
+
+            <text x="312" y="34" font-size="11" fill="#8D959E">what they needed</text>
+            <rect x="312" y="44" width="358" height="34" rx="8" fill="#101317" stroke="#0257BA" stroke-width="1.5"/>
+            <text x="491" y="66" font-size="13" fill="#C9D1D9" text-anchor="middle">hunt · gather · travel · plant</text>
+
+            <text x="30" y="124" font-size="12" fill="#5F6975">A longer system needs a longer repeating pattern, and only the sky has one.</text>
+            <text x="30" y="150" font-size="12" fill="#8D959E">reference → Sun, Moon, and the visible “wanderers”</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Any calendar starts by finding something that repeats on a useful timescale.</figcaption>
+    </figure>
+
+    <div class="analogi">
+      <span class="tag">// analogy</span>
+      <p>Think of a clock that only has a second hand. It tells you the time is passing, but you can’t plan a meeting with it. A calendar is the minute and hour hands people had to invent next.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 ============ -->
+  <section id="s2">
+    <span class="sec-no">02</span>
+    <h2 class="sec">The seven-day week came from the sky</h2>
+    <p>Looking up, people noticed bright objects that floated and never fell. Early cultures treated them as gods watching from above. The ones visible to the naked eye became the basis of the <strong>week</strong>.</p>
+    <p>Planets that cannot be seen without a telescope, such as Pluto, never received a day.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Sky object</th><th>God or meaning</th><th>Becomes</th></tr></thead>
+        <tbody>
+          <tr><td>Sun</td><td>the Sun</td><td>Sunday</td></tr>
+          <tr><td>Moon</td><td>the Moon</td><td>Monday</td></tr>
+          <tr><td>Mars</td><td>Tiu, god of war</td><td>Tuesday</td></tr>
+          <tr><td>Mercury</td><td>Woden, god of wisdom (compare Odin)</td><td>Wednesday</td></tr>
+          <tr><td>Jupiter</td><td>god of thunder (compare Thor)</td><td>Thursday</td></tr>
+          <tr><td>Venus</td><td>Freyja, goddess of love</td><td>Friday</td></tr>
+          <tr><td>Saturn</td><td>Saturn</td><td>Saturday</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="tag">// why it mattered</span>
+      <p>A week gave people a rhythm longer than a day: when to rest, when to work, even when to worship. It was a clear improvement, but still too short to say when to hunt or when winter arrives.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 ============ -->
+  <section id="s3">
+    <span class="sec-no">03</span>
+    <h2 class="sec">The lunar system: a 29.5-day cycle</h2>
+    <p>The Moon is visible from everywhere and changes shape: crescent, growing to full, shrinking back to crescent, over and over. That repetition makes it a natural clock. One full cycle always takes <strong>29.5 days</strong>.</p>
+
+    <figure>
+      <div class="fig-frame">
+        <svg viewBox="0 0 700 200" role="img" aria-label="Moon phases from new to full to new again">
+          <defs>
+            <clipPath id="m1"><circle cx="70" cy="80" r="30"/></clipPath>
+            <clipPath id="m2"><circle cx="190" cy="80" r="30"/></clipPath>
+            <clipPath id="m3"><circle cx="310" cy="80" r="30"/></clipPath>
+            <clipPath id="m4"><circle cx="430" cy="80" r="30"/></clipPath>
+            <clipPath id="m5"><circle cx="550" cy="80" r="30"/></clipPath>
+          </defs>
+          <g font-family="JetBrains Mono, monospace">
+            <circle cx="70" cy="80" r="30" fill="#161A1F" stroke="rgba(247,248,248,.2)"/>
+            <g clip-path="url(#m2)"><circle cx="190" cy="80" r="30" fill="#E9E6D6"/><circle cx="176" cy="80" r="30" fill="#101317"/></g>
+            <circle cx="310" cy="80" r="30" fill="#E9E6D6"/>
+            <g clip-path="url(#m4)"><circle cx="430" cy="80" r="30" fill="#E9E6D6"/><circle cx="444" cy="80" r="30" fill="#101317"/></g>
+            <circle cx="550" cy="80" r="30" fill="#161A1F" stroke="rgba(247,248,248,.2)"/>
+
+            <text x="70" y="136" font-size="11" fill="#8D959E" text-anchor="middle">new</text>
+            <text x="190" y="136" font-size="11" fill="#8D959E" text-anchor="middle">waxing</text>
+            <text x="310" y="136" font-size="11" fill="#79D3A5" text-anchor="middle">full</text>
+            <text x="430" y="136" font-size="11" fill="#E8807F" text-anchor="middle">waning</text>
+            <text x="550" y="136" font-size="11" fill="#8D959E" text-anchor="middle">new</text>
+
+            <path d="M70 160 L550 160" stroke="#0257BA" stroke-width="1.6" marker-end="url(#a2)"/>
+            <text x="310" y="182" font-size="12" fill="#5B9BE8" text-anchor="middle">29.5 days, then it repeats</text>
+            <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#0257BA"/></marker></defs>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The shape changes, but the cycle length does not. That regularity is what makes it usable.</figcaption>
+    </figure>
+
+    <h3>What the phases meant in practice</h3>
+    <ul class="plain">
+      <li><strong>Full moon</strong>: bright roads. Safe to travel between towns, since there were no lamps, and a good time for big gatherings.</li>
+      <li><strong>Waning moon</strong>: it will soon go dark. Finish your journey; dark roads meant danger from animals and bandits.</li>
+    </ul>
+
+    <div class="analogi">
+      <span class="tag">// analogy</span>
+      <p>The Moon is a street light that slowly turns itself on and off over a month. Travelers planned around it the way we plan around a bus timetable.</p>
+    </div>
+
+    <div class="note alert">
+      <span class="tag">// the limit</span>
+      <p>The Moon’s cycle says nothing about <strong>seasons</strong>. A 29.5-day clock cannot tell you when winter starts or when to plant.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 ============ -->
+  <section id="s4">
+    <span class="sec-no">04</span>
+    <h2 class="sec">The solar system: a 365-day cycle</h2>
+    <p>Seasons exist, and ignoring them is dangerous. Before winter, people had to hunt and dry food or they might starve. Farmers had to know when to plant and when to harvest. A longer reference was needed, and again it was in the sky.</p>
+    <p>Look at the Sun at the <strong>same clock time</strong> every day. Its position does not stay put: it shifts a little each day, tracing a pattern (the <strong>analemma</strong>) and finally arriving back where it started. By observation, that took <strong>365 days</strong>. We call that cycle a <strong>year</strong>.</p>
+
+    <figure>
+      <div class="fig-frame">
+        <svg viewBox="0 0 700 250" role="img" aria-label="The Sun's position at the same time each day traces a figure-eight over 365 days">
+          <g font-family="JetBrains Mono, monospace">
+            <text x="30" y="30" font-size="11" fill="#8D959E">Sun’s position at the same time each day</text>
+            <path d="M200 125 C200 60 300 60 350 125 C400 190 500 190 500 125 C500 60 400 60 350 125 C300 190 200 190 200 125 Z" fill="none" stroke="#0257BA" stroke-width="1.8"/>
+            <circle cx="350" cy="125" r="4" fill="#5B9BE8"/>
+            <circle cx="200" cy="125" r="6" fill="#EDA45C"/>
+            <text x="200" y="152" font-size="11" fill="#EDA45C" text-anchor="middle">start</text>
+            <text x="560" y="120" font-size="12" fill="#8D959E">same time of day</text>
+            <text x="560" y="140" font-size="12" fill="#8D959E">different position</text>
+            <text x="560" y="160" font-size="12" fill="#79D3A5">back to start: ~365 days</text>
+            <text x="30" y="232" font-size="12" fill="#5F6975">The pattern repeats, so it can be used as a clock for the year.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Illustrative figure-eight. The point is that the pattern closes up and repeats.</figcaption>
+    </figure>
+
+    <p>With this solar system, people could tell when winter was coming and prepare. It was a reference that supported civilization from then on.</p>
+
+    <div class="analogi">
+      <span class="tag">// analogy</span>
+      <p>If the Moon is the minute hand, the Sun is the hour hand of the sky. It moves more slowly, but it is the one that tells you which part of the year you are in.</p>
+    </div>
+  </section>
+
+  <!-- ============ 05 ============ -->
+  <section id="s5">
+    <span class="sec-no">05</span>
+    <h2 class="sec">Moon or Sun: which is better?</h2>
+    <p>The honest answer is: <strong>it depends on what you need</strong>.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Need</th><th>Lunar</th><th>Solar</th></tr></thead>
+        <tbody>
+          <tr><td>cycle length</td><td>29.5 days</td><td>365 days</td></tr>
+          <tr><td>travel between towns</td><td class="yes">good: full moon = light</td><td class="no">not helpful</td></tr>
+          <tr><td>gatherings, festivals</td><td class="yes">good: full moon</td><td>possible</td></tr>
+          <tr><td>when seasons arrive</td><td class="no">cannot predict</td><td class="yes">good</td></tr>
+          <tr><td>planting, harvest</td><td class="no">cannot predict</td><td class="yes">good</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>History does favor the solar system: a longer span means you can measure time further ahead, predict seasons, and plan work and trade. That is a big reason civilization advanced.</p>
+
+    <div class="note">
+      <span class="tag">// human habit</span>
+      <p>People were already used to the Moon, and people tend to resist changing a system they know, even when a better one exists. So instead of switching, they tried to make the lunar system <strong>represent</strong> the solar year. That led to lunisolar calendars.</p>
+    </div>
+  </section>
+
+  <!-- ============ 06 ============ -->
+  <section id="s6">
+    <span class="sec-no">06</span>
+    <h2 class="sec">Lunisolar: making the Moon fit the Sun</h2>
+    <p>The idea: one year is 12 lunar months. But does that match the solar year?</p>
+
+    <div class="eq">
+      <span class="m">// 12 lunar months</span><br>
+      12 × <span class="hl">29.5</span> = <span class="hl">354</span> days<br>
+      <span class="m">// one solar year</span><br>
+      <span class="hl">365</span> days<br>
+      <span class="bad">→ 11 days short, every year</span>
+    </div>
+
+    <figure>
+      <div class="fig-frame">
+        <svg viewBox="0 0 700 170" role="img" aria-label="Twelve lunar months fall 11 days short of a solar year">
+          <g font-family="JetBrains Mono, monospace">
+            <text x="30" y="34" font-size="11" fill="#8D959E">solar year · 365 days</text>
+            <rect x="30" y="42" width="640" height="22" rx="6" fill="#0257BA"/>
+            <text x="30" y="96" font-size="11" fill="#8D959E">12 lunar months · 354 days</text>
+            <rect x="30" y="104" width="620" height="22" rx="6" fill="#5B9BE8"/>
+            <rect x="650" y="104" width="20" height="22" rx="4" fill="none" stroke="#E8807F" stroke-dasharray="3 3"/>
+            <text x="660" y="150" font-size="11" fill="#E8807F" text-anchor="middle">11 days</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The gap is small each year but adds up, so lunar months slide against the seasons.</figcaption>
+    </figure>
+
+    <h3>The fix: look for a longer match</h3>
+    <p>If one year doesn’t line up, try a longer span. Over <strong>19 years</strong>, the solar side is 19 × 365 = 6,935 days. The lunar side, 19 × 12 = 228 months × 29.5, is only 6,726 days. The gap is <strong>209 days</strong>, about <strong>7 months</strong>.</p>
+    <p>The correction follows directly: add <strong>7 extra months</strong> spread across each 19-year cycle. That is what makes the calendar lunisolar.</p>
+
+    <div class="lab" aria-label="Lab: lunar versus solar gap">
+      <div class="lab-head">// lab 1 · how the gap grows</div>
+      <div class="lab-body">
+        <div class="lab-btns" id="gapBtns"></div>
+        <div class="lab-code" id="gapCode"></div>
+        <div class="lab-trace" id="gapOut"></div>
+      </div>
+    </div>
+
+    <div class="analogi">
+      <span class="tag">// analogy</span>
+      <p>Two runners lap a track at slightly different speeds. After one lap you barely notice the gap; after nineteen laps they are clearly out of step. Adding extra months is like making the slower runner take a shortcut to catch up.</p>
+    </div>
+  </section>
+
+  <!-- ============ 07 ============ -->
+  <section id="s7">
+    <span class="sec-no">07</span>
+    <h2 class="sec">Julian calendar: a year is 365.25 days</h2>
+    <p>Julius Caesar, working before the common era, tracked the Sun’s position using shadows on a sundial. He noticed something odd: after 365 days the Sun was <em>close to</em> its starting place but not exactly there. The second year, closer. The third, closer still. After the <strong>fourth year</strong>, it landed exactly on the first year’s spot.</p>
+    <p>So the true cycle is not 365 days. It is <strong>365.25</strong>, because 0.25 × 4 = 1.</p>
+
+    <figure>
+      <div class="fig-frame">
+        <svg viewBox="0 0 700 180" role="img" aria-label="Four years of 365 days leave a one-day gap that a leap day fixes">
+          <g font-family="JetBrains Mono, monospace">
+            <rect x="30" y="40" width="130" height="30" rx="6" fill="#161A1F" stroke="rgba(247,248,248,.2)"/><text x="95" y="60" font-size="12" fill="#C9D1D9" text-anchor="middle">Y1 · 365</text>
+            <rect x="170" y="40" width="130" height="30" rx="6" fill="#161A1F" stroke="rgba(247,248,248,.2)"/><text x="235" y="60" font-size="12" fill="#C9D1D9" text-anchor="middle">Y2 · 365</text>
+            <rect x="310" y="40" width="130" height="30" rx="6" fill="#161A1F" stroke="rgba(247,248,248,.2)"/><text x="375" y="60" font-size="12" fill="#C9D1D9" text-anchor="middle">Y3 · 365</text>
+            <rect x="450" y="40" width="130" height="30" rx="6" fill="#101317" stroke="#0257BA" stroke-width="1.5"/><text x="515" y="60" font-size="12" fill="#79D3A5" text-anchor="middle">Y4 · 366</text>
+            <text x="590" y="60" font-size="11" fill="#EDA45C">+1 leap day</text>
+            <text x="30" y="110" font-size="12" fill="#8D959E">4 × 0.25 day of drift = 1 whole day</text>
+            <text x="30" y="136" font-size="12" fill="#5F6975">Add one day every four years and the calendar realigns with the Sun.</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The leap year is a bookkeeping fix for a quarter-day we would otherwise lose each year.</figcaption>
+    </figure>
+
+    <ul class="plain">
+      <li>Problem: the real year is longer than 365 days by 0.25 day.</li>
+      <li>Fix: <strong>add 1 day every 4 years</strong>.</li>
+      <li>Those extra-day years are called <strong>leap years</strong>.</li>
+    </ul>
+
+    <div class="analogi">
+      <span class="tag">// analogy</span>
+      <p>Imagine a watch that loses a quarter of a minute every day. You don’t fix it daily. You push it forward by a full minute every four days. The leap day is the same idea.</p>
+    </div>
+  </section>
+
+  <!-- ============ 08 ============ -->
+  <section id="s8">
+    <span class="sec-no">08</span>
+    <h2 class="sec">Gregorian calendar: fixing the fix</h2>
+    <p>For about 1,600 years the Julian calendar worked well enough. Then, in <strong>1582</strong>, Pope Gregory XIII (with better measuring tools) found that the year is actually <strong>365.2425</strong> days, not 365.25.</p>
+    <p>The difference is tiny: 365.25 − 365.2425 = <strong>0.0075</strong> day per year. But it accumulates.</p>
+
+    <div class="eq">
+      <span class="m">// Julian over-counts by</span><br>
+      <span class="hl">0.0075</span> day / year<br>
+      1 ÷ 0.0075 ≈ <span class="hl">133</span> years per extra day<br>
+      <span class="m">// over 400 years</span><br>
+      <span class="bad">≈ 3 extra days</span>
+    </div>
+
+    <p>If the calendar runs ahead of the Sun, dates drift away from the seasons, and even Christmas stops falling in the right season. Gregory’s idea was to spread the three surplus days across 400 years: remove a leap day in the years <strong>100, 200 and 300</strong>, but not in year 400.</p>
+
+    <h3>The rule</h3>
+<pre><code><span class="tk-k">function</span> isLeapYear(year) {
+  <span class="tk-k">if</span> (year % <span class="tk-n">400</span> === <span class="tk-n">0</span>) <span class="tk-k">return</span> <span class="tk-k">true</span>;   <span class="tk-c">// 2000 → leap</span>
+  <span class="tk-k">if</span> (year % <span class="tk-n">100</span> === <span class="tk-n">0</span>) <span class="tk-k">return</span> <span class="tk-k">false</span>;  <span class="tk-c">// 1900 → not leap</span>
+  <span class="tk-k">return</span> year % <span class="tk-n">4</span> === <span class="tk-n">0</span>;                    <span class="tk-c">// 2024 → leap</span>
+}</code></pre>
+
+    <div class="lab" aria-label="Lab: Julian versus Gregorian leap years">
+      <div class="lab-head">// lab 2 · is it a leap year?</div>
+      <div class="lab-body">
+        <div class="lab-btns" id="leapBtns"></div>
+        <div class="lab-code" id="leapCode"></div>
+        <div class="lab-trace" id="leapOut"></div>
+      </div>
+    </div>
+
+    <div class="note">
+      <span class="tag">// the day Britain lost</span>
+      <p>When Britain moved from the Julian to the Gregorian calendar, it had to skip <strong>11 days</strong> to catch up with the Sun. People who went to bed on 2 September woke up on 14 September. The days are not lost in reality, only in the calendar.</p>
+    </div>
+
+    <p>The Gregorian calendar is the most widely used calendar in the world today.</p>
+  </section>
+
+  <!-- ============ 09 ============ -->
+  <section id="s9">
+    <span class="sec-no">09</span>
+    <h2 class="sec">A calendar is not an era</h2>
+    <p>A question from the Q&amp;A: is “Masehi” (the Christian era) the same thing as the Gregorian calendar? <strong>No.</strong></p>
+
+    <div class="split">
+<pre><code>// Gregorian
+a CALENDAR:
+an algorithm that keeps
+dates aligned with the Sun
+(365.2425 days / year)</code></pre>
+<pre><code>// Masehi / CE
+an ERA:
+a way of numbering years
+(before / after a chosen
+starting point)</code></pre>
+    </div>
+
+    <p>Because the world has many religions, the labels <strong>BC</strong> (“Before Christ”) and <strong>AD</strong> (“Anno Domini”) are often replaced by <strong>BCE</strong> (“Before Common Era”) and <strong>CE</strong> (“Common Era”). The year numbers stay the same; only the wording is neutral.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Older</th><th>Neutral</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>BC</td><td>BCE</td><td>before the common era</td></tr>
+          <tr><td>AD</td><td>CE</td><td>the common era</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="analogi">
+      <span class="tag">// analogy</span>
+      <p>A calendar is the ruler. An era is where you decide to put the zero mark. You can measure the same distances with the same ruler and still label the starting point differently.</p>
+    </div>
+  </section>
+
+  <!-- ============ 10 ============ -->
+  <section id="s10">
+    <span class="sec-no">10</span>
+    <h2 class="sec">Summary &amp; practice</h2>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>System</th><th>Cycle</th><th>Key idea</th></tr></thead>
+        <tbody>
+          <tr><td>day / night</td><td>1 day</td><td>too short to plan with</td></tr>
+          <tr><td>week</td><td>7 days</td><td>7 sky objects → 7 weekday names</td></tr>
+          <tr><td>lunar</td><td>29.5 days</td><td>good for travel, blind to seasons</td></tr>
+          <tr><td>solar</td><td>≈ 365 days</td><td>predicts seasons and farming</td></tr>
+          <tr><td>lunisolar</td><td>19 years</td><td>≈ 7 extra months close the 209-day gap</td></tr>
+          <tr><td>Julian</td><td>365.25 days</td><td>leap year every 4 years</td></tr>
+          <tr><td>Gregorian</td><td>365.2425 days</td><td>skip century leap years unless divisible by 400</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Try it yourself</h3>
+    <ol class="tasks">
+      <li>Explain in your own words why day and night alone were not enough for early humans.</li>
+      <li>Name the Moon-based and Sun-based systems and give one thing each is good at and one thing it cannot do.</li>
+      <li>Calculate 12 lunar months in days and compare with 365. How many days are missing?</li>
+      <li>Why does the Julian calendar need a leap year every four years? Show the arithmetic with 0.25.</li>
+      <li>Is 1900 a leap year? Is 2100? Is 2000? Justify each with the Gregorian rule.</li>
+      <li>Write a function that returns how many days a given month has, taking leap years into account.</li>
+    </ol>
+  </section>
+
+  </main>
+</div>
+
+<footer>
+  <div>Based on the lecture “Date 1: Calendar – Batch 3” by KodingUp · Layout inspired by the JavaScript Object module</div>
+</footer>
+
+<script>
+/* ---------- generic lab ---------- */
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+
+function makeLab(btnsId, codeId, outId, head, samples){
+  var btns=document.getElementById(btnsId), codeBox=document.getElementById(codeId), outBox=document.getElementById(outId);
+  function render(i){
+    var s=samples[i];
+    codeBox.textContent=s.code;
+    var html='<table><thead><tr>'+head.map(function(h){return '<th>'+esc(h)+'</th>'}).join('')+'</tr></thead><tbody>';
+    s.rows.forEach(function(r){
+      html+='<tr'+(r[3]?' class="mark"':'')+'><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td class="state">'+esc(r[2])+'</td></tr>';
+    });
+    html+='</tbody></table>';
+    outBox.innerHTML=html;
+    btns.querySelectorAll('button').forEach(function(b,idx){b.setAttribute('aria-pressed',idx===i?'true':'false')});
+  }
+  samples.forEach(function(s,i){
+    var b=document.createElement('button');
+    b.type='button'; b.textContent=s.label; b.setAttribute('aria-pressed','false');
+    b.addEventListener('click',function(){render(i)});
+    btns.appendChild(b);
+  });
+  render(0);
+}
+
+/* ---------- lab 1: lunar vs solar gap ---------- */
+makeLab('gapBtns','gapCode','gapOut',['#','Calculation','Result'],
+  [1,3,10,19].map(function(y){
+    var solar=365*y, months=12*y, lunar=months*29.5, gap=solar-lunar;
+    return {
+      label:y+(y===1?' year':' years'),
+      code:'solar = 365 * '+y+'\nlunar = (12 * '+y+') * 29.5\ngap   = solar - lunar',
+      rows:[
+        ['1','solar days: 365 × '+y, String(solar)],
+        ['2','lunar months: 12 × '+y, String(months)],
+        ['3','lunar days: '+months+' × 29.5', String(lunar)],
+        ['4','gap: '+solar+' − '+lunar, gap+' days'],
+        ['5','gap in lunar months: '+gap+' ÷ 29.5', '≈ '+(gap/29.5).toFixed(1)+' months', y===19]
+      ]
+    };
+  })
+);
+
+/* ---------- lab 2: leap years ---------- */
+function julianLeap(y){return y%4===0}
+function gregLeap(y){return y%400===0 ? true : (y%100===0 ? false : y%4===0)}
+makeLab('leapBtns','leapCode','leapOut',['#','Check','Result'],
+  [1900,2000,2023,2024,2100].map(function(y){
+    var d4=y%4===0, d100=y%100===0, d400=y%400===0;
+    var yn=function(b){return b?'yes':'no'};
+    return {
+      label:String(y),
+      code:'isLeapYear('+y+')',
+      rows:[
+        ['1',y+' divisible by 400?', yn(d400)],
+        ['2',y+' divisible by 100?', yn(d100)],
+        ['3',y+' divisible by 4?', yn(d4)],
+        ['4','Gregorian rule', gregLeap(y)?'leap year (366 days)':'not a leap year (365 days)', true],
+        ['5','Julian rule (every 4 years)', julianLeap(y)?'leap year':'not a leap year', julianLeap(y)!==gregLeap(y)]
+      ]
+    };
+  })
+);
+
+/* ---------- scroll spy ---------- */
+(function(){
+  var links=Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map={};
+  links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a});
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){a.classList.remove('active')});
+        var a=map[e.target.id]; if(a)a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-15% 0px -70% 0px',threshold:0});
+  document.querySelectorAll('section[id]').forEach(function(s){obs.observe(s)});
+})();
+</script>
+</body>
+</html>
